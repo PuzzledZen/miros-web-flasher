@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIROS v1.0 — ESP32-C3 0.42" OLED Smart Firmware</title>
+    <style>
+        :root {
+            --bg-dark: #070a12;
+            --bg-card: #0f172a;
+            --bg-card-hover: #1e293b;
+            --border-color: #334155;
+            --cyan-glow: #00f0ff;
+            --cyan-dim: #008899;
+            --purple-accent: #a855f7;
+            --green-accent: #22c55e;
+            --amber-accent: #f59e0b;
+            --red-accent: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --pcb-purple: #2e1065;
+            --gold-pad: #d97706;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image:
+                linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+            background-size: 42px 42px;
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Scroll-reveal for sections & cards */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+        }
+
+        /* Header / Hero Section */
+        header {
+            background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.15) 0%, rgba(7, 10, 18, 1) 70%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 4rem 2rem 3rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--cyan-glow);
+            color: var(--cyan-glow);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+            animation: badge-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.45); }
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        h1 span {
+            color: var(--cyan-glow);
+        }
+
+        .hero-desc {
+            max-width: 760px;
+            margin: 0 auto 2rem;
+            color: var(--text-muted);
+            font-size: 1.15rem;
+        }
+
+        .quick-specs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .spec-pill {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .spec-pill strong {
+            color: var(--cyan-glow);
+        }
+
+        /* Container & Layout */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        section {
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 1.6rem;
+            background: var(--cyan-glow);
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        /* Interactive Board Simulator Section */
+        .simulator-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.5rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            align-items: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        @media (max-width: 900px) {
+            .simulator-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .board-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ESP32-C3 PCB Mockup */
+        .esp-pcb {
+            width: 240px;
+            height: 340px;
+            background: #250938;
+            border: 3px solid #4c1d95;
+            border-radius: 18px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 15px rgba(168, 85, 247, 0.2);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+            will-change: transform;
+        }
+
+        /* Faint etched circuit-trace texture filling the empty board space */
+        .esp-pcb::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 340'%3E%3Cg fill='none' stroke='%23a855f7' stroke-opacity='0.22' stroke-width='1.5'%3E%3Cpath d='M20 180 H68 V212 H104'/%3E%3Cpath d='M136 184 H188 V222 H162'/%3E%3Cpath d='M56 232 V262 H128 V284'/%3E%3Cpath d='M150 240 H206 V268 H176'/%3E%3Cpath d='M30 246 H50 V292'/%3E%3Cpath d='M168 200 V224 H198'/%3E%3Cpath d='M88 192 V216 H108'/%3E%3Cpath d='M112 262 H158'/%3E%3Cpath d='M40 300 H84 V316'/%3E%3Cpath d='M158 292 V312 H198'/%3E%3C/g%3E%3Cg fill='%2300f0ff' fill-opacity='0.20'%3E%3Ccircle cx='68' cy='180' r='2.6'/%3E%3Ccircle cx='68' cy='212' r='2.6'/%3E%3Ccircle cx='104' cy='212' r='2.6'/%3E%3Ccircle cx='188' cy='184' r='2.6'/%3E%3Ccircle cx='188' cy='222' r='2.6'/%3E%3Ccircle cx='162' cy='222' r='2.6'/%3E%3Ccircle cx='56' cy='232' r='2.6'/%3E%3Ccircle cx='128' cy='262' r='2.6'/%3E%3Ccircle cx='128' cy='284' r='2.6'/%3E%3Ccircle cx='206' cy='240' r='2.6'/%3E%3Ccircle cx='206' cy='268' r='2.6'/%3E%3Ccircle cx='176' cy='268' r='2.6'/%3E%3Ccircle cx='50' cy='246' r='2.6'/%3E%3Ccircle cx='198' cy='200' r='2.6'/%3E%3Ccircle cx='88' cy='216' r='2.6'/%3E%3Ccircle cx='108' cy='216' r='2.6'/%3E%3Ccircle cx='84' cy='300' r='2.6'/%3E%3Ccircle cx='84' cy='316' r='2.6'/%3E%3Ccircle cx='158' cy='312' r='2.6'/%3E%3Ccircle cx='198' cy='312' r='2.6'/%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+        }
+
+        .esp-pcb > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Top Buttons */
+        .pcb-top-buttons {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sm-btn {
+            width: 38px;
+            height: 18px;
+            background: #475569;
+            border: 1px solid #94a3b8;
+            border-radius: 3px;
+            font-size: 9px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .chip-label {
+            font-size: 10px;
+            font-weight: bold;
+            color: #cbd5e1;
+            letter-spacing: 1px;
+        }
+
+        /* Screen Bezel & OLED */
+        .oled-bezel {
+            width: 190px;
+            height: 120px;
+            background: #020617;
+            border: 3px solid #1e293b;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+            position: relative;
+        }
+
+        .oled-display {
+            width: 172px;
+            height: 96px; /* 72x40 scaled up x2.4 */
+            background: #000;
+            border: 1px solid #111;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+            font-family: "Courier New", Courier, monospace;
+            color: var(--cyan-glow);
+            border-radius: 2px;
+        }
+
+        /* OLED Canvas / Rendering — normal smooth rendering for readability */
+        #oledCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Onboard Pins Layout */
+        .pcb-pins-left, .pcb-pins-right {
+            position: absolute;
+            top: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .pcb-pins-left { left: 4px; }
+        .pcb-pins-right { right: 4px; }
+
+        .pin-pad {
+            width: 10px;
+            height: 10px;
+            background: #f59e0b;
+            border-radius: 50%;
+            border: 1.5px solid #78350f;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+        }
+
+        /* USB-C Connector & GPIO LED */
+        .usbc-port {
+            width: 65px;
+            height: 35px;
+            background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
+            border-radius: 6px 6px 2px 2px;
+            position: absolute;
+            bottom: 0;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .usbc-inner {
+            width: 45px;
+            height: 14px;
+            background: #020617;
+            border-radius: 4px;
+            border: 1px solid #64748b;
+        }
+
+        /* Hardware LED on GPIO 8 */
+        .gpio-led {
+            width: 12px;
+            height: 12px;
+            background: #334155;
+            border-radius: 50%;
+            border: 1px solid #64748b;
+            position: absolute;
+            bottom: 45px;
+            right: 25px;
+            transition: background 0.1s, box-shadow 0.1s;
+        }
+
+        .gpio-led.active {
+            background: #22c55e;
+            box-shadow: 0 0 12px #22c55e, 0 0 20px #22c55e;
+        }
+
+        .gpio-led-label {
+            position: absolute;
+            bottom: 47px;
+            right: 42px;
+            font-size: 9px;
+            color: #94a3b8;
+            font-weight: bold;
+        }
+
+        /* Virtual Control Button */
+        .sim-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.25rem;
+            width: 100%;
+        }
+
+        .virtual-btn {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            user-select: none;
+            width: 100%;
+            max-width: 320px;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .virtual-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(2, 132, 199, 0.6);
+        }
+
+        .virtual-btn:focus-visible {
+            outline: 2px solid var(--cyan-glow);
+            outline-offset: 3px;
+        }
+
+        .virtual-btn:active, .virtual-btn.pressed {
+            transform: translateY(2px) scale(0.98);
+            background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+            box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+        }
+
+        .gesture-legend {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .gesture-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .gesture-item:last-child {
+            border-bottom: none;
+        }
+
+        .gesture-key {
+            color: var(--cyan-glow);
+            font-weight: 600;
+        }
+
+        /* Card Grid Layout */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.5rem;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .app-card:hover {
+            border-color: var(--cyan-glow);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 240, 255, 0.15);
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .app-icon-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .app-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: var(--cyan-glow);
+        }
+
+        .app-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .app-tag {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .tag-prod { background: rgba(168, 85, 247, 0.15); color: var(--purple-accent); border: 1px solid rgba(168, 85, 247, 0.3); }
+        .tag-util { background: rgba(34, 197, 94, 0.15); color: var(--green-accent); border: 1px solid rgba(34, 197, 94, 0.3); }
+        .tag-game { background: rgba(245, 158, 11, 0.15); color: var(--amber-accent); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .tag-rand { background: rgba(0, 240, 255, 0.15); color: var(--cyan-glow); border: 1px solid rgba(0, 240, 255, 0.3); }
+
+        .app-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 1.25rem;
+            flex-grow: 1;
+        }
+
+        .app-controls {
+            background: rgba(7, 10, 18, 0.6);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            border-left: 3px solid var(--cyan-glow);
+        }
+
+        .app-controls strong {
+            color: var(--text-main);
+        }
+
+        /* Detailed Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #020617;
+            color: var(--cyan-glow);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .kbd {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: var(--cyan-glow);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        /* Code Block & Tech Section */
+        .code-block {
+            background: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+
+        .code-comment { color: #64748b; }
+        .code-keyword { color: var(--purple-accent); font-weight: bold; }
+        .code-type { color: var(--cyan-glow); }
+        .code-var { color: var(--amber-accent); }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: #020617;
+        }
+
+        footer a {
+            color: var(--cyan-glow);
+            text-decoration: none;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 720px) {
+            header {
+                padding: 3rem 1.25rem 2.25rem;
+            }
+
+            h1 {
+                font-size: 2.1rem;
+            }
+
+            .hero-desc {
+                font-size: 1rem;
+            }
+
+            .quick-specs {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+
+            .spec-pill {
+                justify-content: center;
+            }
+
+            .container {
+                padding: 2.5rem 1rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .simulator-wrapper {
+                padding: 1.75rem 1rem;
+                gap: 1.75rem;
+            }
+
+            .esp-pcb {
+                width: 210px;
+                height: 300px;
+            }
+
+            .oled-bezel {
+                width: 165px;
+                height: 105px;
+            }
+
+            .oled-display {
+                width: 149px;
+                height: 84px;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gesture-item {
+                flex-direction: column;
+                gap: 0.15rem;
+                padding: 0.6rem 0;
+            }
+
+            th, td {
+                padding: 0.75rem 0.85rem;
+                font-size: 0.85rem;
+            }
+
+            .code-block {
+                font-size: 0.8rem;
+            }
+
+            footer {
+                padding: 2rem 1.25rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            h1 {
+                font-size: 1.7rem;
+            }
+
+            .badge {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.7rem;
+            }
+
+            .virtual-btn {
+                font-size: 0.95rem;
+                padding: 0.9rem 1.5rem;
+            }
+
+            .esp-pcb {
+                width: 185px;
+                height: 270px;
+            }
+
+            .oled-bezel {
+                width: 145px;
+                height: 92px;
+            }
+
+            .oled-display {
+                width: 130px;
+                height: 73px;
+            }
+        }
+    
+.flash-btn{
+display:inline-flex;
+align-items:center;
+padding:.55rem 1.15rem;
+border-radius:999px;
+text-decoration:none;
+font-weight:800;
+letter-spacing:.4px;
+color:#001018;
+background:#00f0ff;
+border:1px solid #7df9ff;
+box-shadow:0 0 12px rgba(0,240,255,.55);
+animation:flashBreath 1.8s ease-in-out infinite;
+transition:transform .2s;
+}
+.flash-btn:hover{transform:translateY(-2px) scale(1.03);}
+@keyframes flashBreath{
+0%,100%{
+box-shadow:0 0 10px rgba(0,240,255,.4),0 0 22px rgba(0,240,255,.3);
+transform:scale(1);
+filter:brightness(1);
+}
+50%{
+box-shadow:0 0 18px #00f0ff,0 0 38px #00f0ff,0 0 70px rgba(0,240,255,.9);
+transform:scale(1.06);
+filter:brightness(1.2);
+}
+}
+
+
+/* ================= Flash modal ================= */
+button.flash-btn{font-family:inherit;font-size:1rem;line-height:1.2;cursor:pointer;}
+body.fm-lock{overflow:hidden;}
+:root{--mdc-dialog-z-index:2000;} /* keeps ESP Web Tools' own dialog above ours */
+.fm-overlay{
+  position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+  padding:1rem;background:rgba(2,6,14,.84);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease;
+}
+.fm-overlay.open{opacity:1;visibility:visible;}
+.fm-card{
+  position:relative;width:100%;max-width:660px;max-height:calc(100vh - 2rem);max-height:calc(100dvh - 2rem);
+  overflow-y:auto;background:var(--bg-card);border:1px solid var(--cyan-dim);border-radius:16px;
+  padding:1.75rem 1.75rem 1.5rem;
+  box-shadow:0 0 0 1px rgba(0,240,255,.15),0 24px 60px rgba(0,0,0,.7),0 0 50px rgba(0,240,255,.12);
+  transform:translateY(14px) scale(.98);transition:transform .25s ease;
+}
+.fm-overlay.open .fm-card{transform:none;}
+.fm-close{
+  position:absolute;top:.75rem;right:.75rem;width:36px;height:36px;border-radius:50%;
+  background:transparent;border:1px solid var(--border-color);color:var(--text-muted);
+  font-size:1.4rem;line-height:1;cursor:pointer;transition:all .15s;
+}
+.fm-close:hover{color:#fff;border-color:var(--cyan-glow);}
+.fm-close:focus-visible,.fm-copy:focus-visible,.fm-card summary:focus-visible{outline:2px solid var(--cyan-glow);outline-offset:3px;}
+.fm-head{padding-right:2.5rem;margin-bottom:1rem;}
+.fm-head h2{font-size:1.5rem;color:#fff;margin:.35rem 0 .2rem;text-shadow:0 0 16px rgba(0,240,255,.25);}
+.fm-head p{color:var(--text-muted);font-size:.92rem;}
+.fm-alert{
+  display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.8rem .95rem;
+  font-size:.92rem;margin-bottom:1.1rem;border:1px solid;
+}
+.fm-alert.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.45);color:#bbf7d0;}
+.fm-alert.bad{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.55);color:#fecaca;}
+.fm-alert.warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.5);color:#fde68a;}
+.fm-alert .fm-ico{font-size:1.2rem;line-height:1.3;}
+.fm-alert strong{color:#fff;}
+.fm-copy{
+  margin-top:.5rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);color:#fff;
+  padding:.3rem .8rem;border-radius:6px;font:inherit;font-size:.85rem;cursor:pointer;
+}
+.fm-copy:hover{background:rgba(255,255,255,.16);}
+.fm-steps{list-style:none;counter-reset:fm;margin:0 0 1.1rem;padding:0;}
+.fm-steps li{
+  counter-increment:fm;position:relative;padding:.15rem 0 .85rem 2.6rem;
+  color:var(--text-muted);font-size:.93rem;
+}
+.fm-steps li::before{
+  content:counter(fm);position:absolute;left:0;top:0;width:1.85rem;height:1.85rem;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;
+  color:var(--cyan-glow);background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.45);
+}
+.fm-steps li:not(:last-child)::after{
+  content:'';position:absolute;left:.92rem;top:2rem;bottom:.1rem;width:1px;background:rgba(0,240,255,.2);
+}
+.fm-steps li strong{display:block;color:#fff;font-size:1rem;margin-bottom:.1rem;}
+.fm-steps li b{color:var(--text-main);}
+.fm-steps .kbd{font-size:.78rem;}
+/* Mock of Chrome's serial-port chooser */
+.fm-chooser-wrap{margin:.2rem 0 1.2rem;}
+.fm-chooser-label{font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--cyan-glow);font-weight:700;margin-bottom:.5rem;}
+.fm-chooser{
+  max-width:400px;margin:0 auto;background:#2b2d31;border:1px solid #4b4e55;border-radius:12px;
+  padding:1rem 1rem .9rem;box-shadow:0 10px 30px rgba(0,0,0,.5);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:#e3e3e3;
+}
+.fm-chooser .t{font-size:.9rem;margin-bottom:.7rem;}
+.fm-chooser .row{
+  font-size:.85rem;padding:.5rem .7rem;border-radius:6px;border:1px solid transparent;color:#a8abb2;
+  display:flex;justify-content:space-between;gap:.5rem;align-items:center;
+}
+.fm-chooser .row.sel{background:rgba(138,180,248,.18);border-color:#8ab4f8;color:#fff;position:relative;}
+.fm-chooser .row .tag{font-size:.7rem;font-weight:700;color:#001018;background:#00f0ff;border-radius:999px;padding:.1rem .5rem;white-space:nowrap;animation:fmTag 1.6s ease-in-out infinite;}
+@keyframes fmTag{0%,100%{box-shadow:0 0 4px rgba(0,240,255,.5);}50%{box-shadow:0 0 14px #00f0ff;}}
+.fm-chooser .btns{display:flex;justify-content:flex-end;gap:.5rem;margin-top:.8rem;}
+.fm-chooser .btns span{font-size:.82rem;padding:.35rem .9rem;border-radius:999px;}
+.fm-chooser .btns .c{color:#8ab4f8;}
+.fm-chooser .btns .go{background:#8ab4f8;color:#0b1b3a;font-weight:600;}
+.fm-ports{display:flex;flex-wrap:wrap;gap:.4rem .9rem;justify-content:center;margin-top:.7rem;font-size:.8rem;color:var(--text-muted);}
+.fm-ports code{color:var(--cyan-glow);font-family:"Courier New",monospace;}
+.fm-action{
+  display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center;
+  padding:1.1rem 0 .4rem;border-top:1px solid var(--border-color);
+}
+.fm-action .fm-install{padding:.85rem 1.8rem;font-size:1.05rem;}
+.fm-action .fm-note{font-size:.82rem;color:var(--text-muted);max-width:480px;}
+.fm-unsupported{color:#fecaca;font-size:.9rem;font-weight:600;}
+.fm-card details{margin-top:.9rem;border:1px solid var(--border-color);border-radius:10px;padding:.65rem .9rem;background:rgba(2,6,23,.5);}
+.fm-card summary{cursor:pointer;font-weight:700;color:#fff;font-size:.92rem;}
+.fm-card details ul{margin:.6rem 0 0 1.1rem;color:var(--text-muted);font-size:.88rem;}
+.fm-card details li{margin-bottom:.35rem;}
+@media (max-width:520px){
+  .fm-card{padding:1.25rem 1rem 1.1rem;border-radius:14px;}
+  .fm-head h2{font-size:1.25rem;}
+}
+@media (prefers-reduced-motion: reduce){
+  .flash-btn,.fm-chooser .row .tag{animation:none;}
+  .fm-overlay,.fm-card{transition:none;}
+}
+
+</style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header>
+        <div style="display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:1.5rem;">
+<div class="badge" style="margin-bottom:0;">MIROS v1.0</div>
+<button type="button" class="flash-btn" id="flashOpen" aria-haspopup="dialog">⚡ Flash It Yourself</button>
+</div>
+        <h1>ESP32-C3 <span>0.42" OLED</span> Smart Platform</h1>
+        <p class="hero-desc">
+            A feature-packed micro operating system engineered for ultra-compact ESP32-C3 development boards with integrated 72x40 SSD1306 displays. Operates smoothly via a unified single-button gesture machine.
+        </p>
+        <div class="quick-specs">
+            <div class="spec-pill"><span>MCU:</span> <strong>ESP32-C3 RISC-V @ 160MHz</strong></div>
+            <div class="spec-pill"><span>Display:</span> <strong>0.42" OLED (72x40 SSD1306 I2C)</strong></div>
+            <div class="spec-pill"><span>Input:</span> <strong>Single Button (BOOT)</strong></div>
+            <div class="spec-pill"><span>Indicator:</span> <strong>Status LED (GPIO 8)</strong></div>
+            <div class="spec-pill"><span>Storage:</span> <strong>Preferences NVS Flash</strong></div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- SECTION 1: Live Hardware Simulator -->
+        <section>
+            <div class="section-title">Interactive Hardware Simulator</div>
+            <p class="section-subtitle">Experience MIROS v1.0 directly in your browser. Test gestures, cycle through apps, and play retro games using the virtual BOOT button!</p>
+            
+            <div class="simulator-wrapper">
+                <div class="board-container">
+                    <!-- Physical Board Mockup -->
+                    <div class="esp-pcb">
+                        <div class="pcb-pins-left">
+                            <div class="pin-pad"></div><div class="pin-pad"></div><div class="pin-pad"></div>
+                            <div class="pin-pad"></div><div class="pin-pad"></div><div class="pin-pad"></div>
+                            <div class="pin-pad"></div><div class="pin-pad"></div>
+                        </div>
+                        <div class="pcb-pins-right">
+                            <div class="pin-pad"></div><div class="pin-pad"></div><div class="pin-pad"></div>
+                            <div class="pin-pad"></div><div class="pin-pad"></div><div class="pin-pad"></div>
+                            <div class="pin-pad"></div><div class="pin-pad"></div>
+                        </div>
+
+                        <div class="pcb-top-buttons">
+                            <div class="sm-btn">RST</div>
+                            <div class="chip-label">ESP32-C3</div>
+                            <div class="sm-btn">BOOT</div>
+                        </div>
+
+                        <div class="oled-bezel">
+                            <div class="oled-display">
+                                <canvas id="oledCanvas" width="288" height="160"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="gpio-led" id="hwLed"></div>
+                        <div class="gpio-led-label">LED</div>
+
+                        <div class="usbc-port">
+                            <div class="usbc-inner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sim-controls">
+                    <button class="virtual-btn" id="gpioBtn">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M4 4l5 5"></path></svg>
+                        PRESS BOOT BUTTON
+                    </button>
+
+                    <div class="gesture-legend">
+                        <div class="gesture-item">
+                            <span class="gesture-key">Single Tap</span>
+                            <span>Scroll Menu / In-App Primary Action</span>
+                        </div>
+                        <div class="gesture-item">
+                            <span class="gesture-key">Double Tap</span>
+                            <span>Reset Counter / Timer / Stopwatch</span>
+                        </div>
+                        <div class="gesture-item">
+                            <span class="gesture-key">Hold 0.7s</span>
+                            <span>Enter App / Exit to Main Menu</span>
+                        </div>
+                        <div class="gesture-item">
+                            <span class="gesture-key">Hold 3.0s</span>
+                            <span>Start Countdown Timer</span>
+                        </div>
+                        <div class="gesture-item">
+                            <span class="gesture-key">Hold 2.0s (Dino)</span>
+                            <span>Exit Dino Runner (Prevent Duck exit)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Universal Gestures Reference -->
+        <section>
+            <div class="section-title">Universal Control & Gesture Engine</div>
+            <p class="section-subtitle">MIROS uses a single pin (BOOT Button) with high-precision software debouncing and state timing to eliminate gesture collision.</p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Gesture Trigger</th>
+                            <th>Timing Threshold</th>
+                            <th>Global Default Action</th>
+                            <th>Context Specific Override</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="kbd">Short Tap</span></td>
+                            <td>&lt; 300 ms</td>
+                            <td>Next menu item / Select option</td>
+                            <td>Snake: Turn | Flappy: Flap | Dino: Jump | Space: Shoot</td>
+                        </tr>
+                        <tr>
+                            <td><span class="kbd">Double Tap</span></td>
+                            <td>&lt; 350 ms window</td>
+                            <td>Ignored in simple apps</td>
+                            <td>Reset values (Stopwatch, Timer, Tally Counter)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="kbd">Global Hold</span></td>
+                            <td>700 ms</td>
+                            <td>Enter App / Exit to Main Menu</td>
+                            <td>Pomodoro: Hold to cancel & return to Idle</td>
+                        </tr>
+                        <tr>
+                            <td><span class="kbd">Timer Hold</span></td>
+                            <td>3000 ms (3 sec)</td>
+                            <td>N/A</td>
+                            <td>Starts Countdown Timer from stopped state</td>
+                        </tr>
+                        <tr>
+                            <td><span class="kbd">Dino Duck / Exit</span></td>
+                            <td>Hold &gt; 250ms (Duck)<br>Hold &gt; 2000ms (Exit)</td>
+                            <td>N/A</td>
+                            <td>Dino Runner: Press & hold to Duck under birds. Holding > 2s exits to menu.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Thorough App Matrix -->
+        <section>
+            <div class="section-title">Complete Applications Matrix (16 Built-in Apps)</div>
+            <p class="section-subtitle">Every application is custom-crafted to maximize readability and performance on the 72x40 pixel OLED screen.</p>
+
+            <div class="card-grid">
+                <!-- App 1 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">⏱️</div>
+                                <div class="app-title">Stopwatch</div>
+                            </div>
+                            <span class="app-tag tag-prod">Time</span>
+                        </div>
+                        <div class="app-desc">High-precision millisecond stopwatch rendering minutes, seconds, and tenths of a second using U8g2 logisoso16 font. Features real-time GPIO 8 LED status pulse while active.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Start/Pause | Double Tap = Reset | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 2 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">⏳</div>
+                                <div class="app-title">Countdown Timer</div>
+                            </div>
+                            <span class="app-tag tag-prod">Time</span>
+                        </div>
+                        <div class="app-desc">Selectable timer presets (1m, 2m, 5m, 10m, 15m, 30m, 45m, 60m). Visual hold progress bar appears when initiating start. Blinks screen and flashes rapid LED pattern upon alarm expiration.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Cycle Presets / Pause | Hold 3s = Start | Double Tap = Reset
+                    </div>
+                </div>
+
+                <!-- App 3 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🍅</div>
+                                <div class="app-title">Pomodoro</div>
+                            </div>
+                            <span class="app-tag tag-prod">Time</span>
+                        </div>
+                        <div class="app-desc">Classic focus technique assistant with 25-minute work blocks and 5-minute rest breaks. Keeps track of completed session count on screen.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Start Work/Break | Hold 0.7s = Cancel Session
+                    </div>
+                </div>
+
+                <!-- App 4 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🎲</div>
+                                <div class="app-title">Dice Roller</div>
+                            </div>
+                            <span class="app-tag tag-rand">Chance</span>
+                        </div>
+                        <div class="app-desc">Digital D6 die with a 500ms animated roll sequence displaying random dot patterns before settling on a fair 1–6 outcome.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Roll Dice | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 5 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🎱</div>
+                                <div class="app-title">Magic 8-Ball</div>
+                            </div>
+                            <span class="app-tag tag-rand">Chance</span>
+                        </div>
+                        <div class="app-desc">Answers life's pressing questions with 14 distinct responses (YES!, ABSOLUTELY, NO WAY, MAYBE, etc.). Shakes graphically for 800ms before revealing answer with horizontal marquee text scrolling for long sentences.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Ask Question | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 6 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🪙</div>
+                                <div class="app-title">Coin Flipper</div>
+                            </div>
+                            <span class="app-tag tag-rand">Chance</span>
+                        </div>
+                        <div class="app-desc">Simulates a 3D coin spinning on its vertical axis. The graphic squashes and stretches across half-cycles before landing clean on HEADS or TAILS.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Flip Coin | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 7 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🫁</div>
+                                <div class="app-title">Breathing Coach</div>
+                            </div>
+                            <span class="app-tag tag-util">Utility</span>
+                        </div>
+                        <div class="app-desc">Box Breathing coach (4s Inhale, 4s Hold, 4s Exhale, 4s Hold). Uses a mathematical smoothstep curve to seamlessly expand and contract a central breathing circle on screen.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Start/Pause | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 8 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🔢</div>
+                                <div class="app-title">Tally Counter</div>
+                            </div>
+                            <span class="app-tag tag-util">Utility</span>
+                        </div>
+                        <div class="app-desc">Digital event counter storing count values directly to ESP32 Flash Preferences NVS memory (`tally_cnt`). Retains count even after power down or reset.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Increment +1 | Double Tap = Reset to 0 | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 9 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🔦</div>
+                                <div class="app-title">Flashlight & SOS</div>
+                            </div>
+                            <span class="app-tag tag-util">Utility</span>
+                        </div>
+                        <div class="app-desc">Multi-mode torch tool utilizing OLED backlight max contrast and onboard IO8 LED. Offers Solid fill, 50ms Strobe, and standard international Morse Code S.O.S. pattern.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Cycle Modes (Solid -> Strobe -> SOS) | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 10 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🐍</div>
+                                <div class="app-title">Snake Game</div>
+                            </div>
+                            <span class="app-tag tag-game">Game</span>
+                        </div>
+                        <div class="app-desc">Classic arcade Snake running on an 18x8 grid trimmed so score display never overlaps play area. Features persistent High Score saved to NVS flash (`snk_hi`).</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Rotate Clockwise (Up->Right->Down->Left) | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 11 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🐦</div>
+                                <div class="app-title">Flappy Bird</div>
+                            </div>
+                            <span class="app-tag tag-game">Game</span>
+                        </div>
+                        <div class="app-desc">Real-time side-scrolling physics game with gravity calculations, randomized pipe gap heights, collision detection, and flash persistent High Score (`flp_hi`).</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Flap Wings / Jump | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 12 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🏓</div>
+                                <div class="app-title">Pong Game</div>
+                            </div>
+                            <span class="app-tag tag-game">Game</span>
+                        </div>
+                        <div class="app-desc">Solo paddle arcade Pong with velocity reflection and speed acceleration (3% faster per bounce). Persistent High Score saved to flash (`png_hi`).</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Reverse Paddle Movement | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 13 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🚀</div>
+                                <div class="app-title">Space Defender</div>
+                            </div>
+                            <span class="app-tag tag-game">Game</span>
+                        </div>
+                        <div class="app-desc">Retro space shooter with scrolling background starfield, automated ship navigation, laser projectiles, descending alien waves, and particle explosion graphics. High score persistent (`spc_hi`).</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Tap = Fire Laser Cannon | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 14 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">🦖</div>
+                                <div class="app-title">Dino Runner</div>
+                            </div>
+                            <span class="app-tag tag-game">Game</span>
+                        </div>
+                        <div class="app-desc">Chrome-inspired infinite runner featuring cacti obstacles, flying Pterodactyls with animated flapping wings, jump mechanics, and duck stance. High score persistent (`dno_hi`).</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Short Tap = Jump | Press & Hold = Duck | Hold 2s = Exit
+                    </div>
+                </div>
+
+                <!-- App 15 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">📲</div>
+                                <div class="app-title">QR Code Display</div>
+                            </div>
+                            <span class="app-tag tag-util">Utility</span>
+                        </div>
+                        <div class="app-desc">Renders an on-screen Version 1 (21x21 module) micro QR code with quiet border padding using `qrcode.h`, formatted for instant mobile phone camera scanning.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Static Display | Hold 0.7s = Exit
+                    </div>
+                </div>
+
+                <!-- App 16 -->
+                <div class="app-card">
+                    <div>
+                        <div class="app-header">
+                            <div class="app-icon-title">
+                                <div class="app-icon">ℹ️</div>
+                                <div class="app-title">About System</div>
+                            </div>
+                            <span class="app-tag tag-util">System</span>
+                        </div>
+                        <div class="app-desc">Displays system version ("MIROS v1.0") and author credentials ("PuzzledZen") alongside a smooth infinite scrolling marquee — a fun little surprise worth trying yourself.</div>
+                    </div>
+                    <div class="app-controls">
+                        <strong>Controls:</strong> Continuous Scroll | Hold 0.7s = Exit
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: System Architecture & Power Management -->
+        <section>
+            <div class="section-title">Hardware Architecture & Energy Management</div>
+            <p class="section-subtitle">Designed specifically for low-power operation and long display lifespan.</p>
+
+            <div class="card-grid">
+                <div class="app-card" style="grid-column: span 1;">
+                    <h3 style="color: var(--cyan-glow); margin-bottom: 0.75rem;">⚡ Auto-Dim System</h3>
+                    <p class="app-desc">To protect the 0.42" OLED screen from burn-in, MIROS automatically monitors button inactivity (`lastActivity`). After 30 seconds of idle time, display contrast drops from 255 down to 30.</p>
+                </div>
+
+                <div class="app-card" style="grid-column: span 1;">
+                    <h3 style="color: var(--purple-accent); margin-bottom: 0.75rem;">💤 Bouncing Screensaver</h3>
+                    <p class="app-desc">If inactivity continues for 45 seconds total (30s dim + 15s delay), MIROS enters screensaver mode, bouncing a low-brightness "MIROS" emblem across the screen. Pressing the BOOT Button wakes the screen seamlessly.</p>
+                </div>
+
+                <div class="app-card" style="grid-column: span 1;">
+                    <h3 style="color: var(--green-accent); margin-bottom: 0.75rem;">💾 EEPROM / Preferences NVS</h3>
+                    <p class="app-desc">Uses ESP32 non-volatile storage to persist user data. All game high scores (`snk_hi`, `flp_hi`, `png_hi`, `spc_hi`, `dno_hi`) and tally counter state survive complete battery disconnects.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    
+        <!-- Footer -->
+    <footer>
+        <p>MIROS v1.0 — ESP32-C3 0.42" OLED Platform Documentation & Interactive Demo</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">Developed by PuzzledZen · <a href="https://github.com/PuzzledZen/miros-web-flasher" target="_blank" rel="noopener">View on GitHub</a></p>
+    </footer>
+
+
+    <!-- ============ Flash It Yourself modal ============ -->
+    <div class="fm-overlay" id="flashModal" aria-hidden="true">
+        <div class="fm-card" role="dialog" aria-modal="true" aria-labelledby="fmTitle" tabindex="-1">
+            <button type="button" class="fm-close" id="fmClose" aria-label="Close flasher">&times;</button>
+
+            <div class="fm-head">
+                <div class="badge" style="margin-bottom:0;">MIROS v1.0 · ESP32-C3</div>
+                <h2 id="fmTitle">Flash MIROS to your board</h2>
+                <p>Installs straight from your browser. Takes about 30 seconds, nothing to download.</p>
+            </div>
+
+            <div class="fm-alert" id="fmBrowserAlert" role="status"></div>
+
+            <ol class="fm-steps">
+                <li>
+                    <strong>Use Google Chrome on a computer</strong>
+                    Chrome or Edge on Windows, macOS, Linux or ChromeOS. Firefox, Safari and phones can't flash.
+                </li>
+                <li>
+                    <strong>Plug in your board</strong>
+                    Use a USB-C <b>data</b> cable (charge-only cables won't show a port). Plug it straight into the computer.
+                </li>
+                <li>
+                    <strong>Click “Connect &amp; Install” below</strong>
+                    Chrome opens a small popup listing the available serial (COM) ports.
+                </li>
+                <li>
+                    <strong>Pick your board's port, then press Connect</strong>
+                    Look for <b>USB JTAG/serial debug unit</b> (or CH340 / CP210x on some boards). Ignore Bluetooth ports.
+                </li>
+                <li>
+                    <strong>Press Install and wait for 100%</strong>
+                    Tick <b>Erase device</b> for a clean install (this also clears saved high scores). Don't unplug while it flashes.
+                </li>
+                <li>
+                    <strong>Press RST (or replug)</strong>
+                    MIROS boots and the menu appears on the OLED. Tap BOOT to scroll, hold 0.7s to open an app.
+                </li>
+            </ol>
+
+            <div class="fm-chooser-wrap">
+                <div class="fm-chooser-label">What the port popup looks like</div>
+                <div class="fm-chooser" aria-hidden="true">
+                    <div class="t">This site wants to connect to a serial port</div>
+                    <div class="row"><span>Standard Serial over Bluetooth link (COM3)</span></div>
+                    <div class="row sel"><span>USB JTAG/serial debug unit (COM5)</span><span class="tag">← choose this</span></div>
+                    <div class="btns"><span class="c">Cancel</span><span class="go">Connect</span></div>
+                </div>
+                <div class="fm-ports">
+                    <span>Windows: <code>COM3–COM9</code></span>
+                    <span>macOS: <code>cu.usbmodem…</code></span>
+                    <span>Linux: <code>/dev/ttyACM0</code></span>
+                </div>
+            </div>
+
+            <div class="fm-action">
+                <esp-web-install-button manifest="manifest.json">
+                    <button slot="activate" type="button" class="flash-btn fm-install">⚡ Connect &amp; Install MIROS</button>
+                    <span slot="unsupported" class="fm-unsupported">This browser can't flash. Open this page in Google Chrome or Edge on a computer.</span>
+                    <span slot="not-allowed" class="fm-unsupported">Flashing needs a secure page. Open this site over HTTPS.</span>
+                </esp-web-install-button>
+                <div class="fm-note">Firmware: MIROS v1.0 for ESP32-C3 (0.42" OLED). Flashes only the board you select.</div>
+            </div>
+
+            <details>
+                <summary>Port not showing up or flashing fails?</summary>
+                <ul>
+                    <li><b>Empty port list:</b> swap the cable (it must carry data) and try another USB port.</li>
+                    <li><b>Enter download mode:</b> hold <span class="kbd">BOOT</span>, tap <span class="kbd">RST</span> (or plug in while holding BOOT), release BOOT, then click Connect again.</li>
+                    <li><b>“Failed to connect” or port busy:</b> close anything else using the board (Arduino or PlatformIO serial monitor, other flasher tabs).</li>
+                    <li><b>Windows with CH340 or CP210x boards:</b> install the matching USB-serial driver, then replug.</li>
+                    <li><b>Linux:</b> run <span class="kbd">sudo usermod -aG dialout $USER</span>, then log out and back in.</li>
+                    <li><b>Stuck on boot after flashing:</b> flash again with <b>Erase device</b> ticked.</li>
+                </ul>
+            </details>
+        </div>
+    </div>
+
+    <script type="module" src="https://unpkg.com/esp-web-tools@10.2.1/dist/web/install-button.js?module"></script>
+    <script>
+    (function () {
+        var modal = document.getElementById('flashModal');
+        var openBtn = document.getElementById('flashOpen');
+        var closeBtn = document.getElementById('fmClose');
+        var card = modal.querySelector('.fm-card');
+        var alertBox = document.getElementById('fmBrowserAlert');
+        var lastFocus = null;
+
+        function checkBrowser() {
+            var hasSerial = 'serial' in navigator;
+            var secure = window.isSecureContext;
+            if (!secure) {
+                alertBox.className = 'fm-alert warn';
+                alertBox.innerHTML = '<span class="fm-ico">🔒</span><div><strong>This page must be served over HTTPS.</strong> Browsers block flashing on file:// pages. Upload the site to HTTPS hosting (or test on localhost).</div>';
+            } else if (!hasSerial) {
+                alertBox.className = 'fm-alert bad';
+                alertBox.innerHTML = '<span class="fm-ico">⚠️</span><div><strong>Please use Google Chrome (or Edge) on a computer.</strong> This browser doesn\'t support flashing over USB.<br><button type="button" class="fm-copy" id="fmCopy">Copy page link</button></div>';
+                var copy = document.getElementById('fmCopy');
+                copy.addEventListener('click', function () {
+                    var done = function () { copy.textContent = 'Link copied ✓'; };
+                    try { navigator.clipboard.writeText(location.href).then(done, done); } catch (e) { done(); }
+                });
+            } else {
+                alertBox.className = 'fm-alert ok';
+                alertBox.innerHTML = '<span class="fm-ico">✅</span><div><strong>Browser check passed.</strong> Chrome/Edge detected, you\'re ready to flash.</div>';
+            }
+        }
+
+        function ewtOpen() { return !!document.querySelector('ewt-install-dialog'); }
+
+        function openModal() {
+            lastFocus = document.activeElement;
+            checkBrowser();
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('fm-lock');
+            card.scrollTop = 0;
+            setTimeout(function () { closeBtn.focus(); }, 30);
+        }
+        function closeModal() {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('fm-lock');
+            if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('mousedown', function (e) {
+            if (e.target === modal && !ewtOpen()) closeModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (!modal.classList.contains('open')) return;
+            if (e.key === 'Escape' && !ewtOpen()) { closeModal(); return; }
+            if (e.key === 'Tab' && !ewtOpen()) {
+                var f = card.querySelectorAll('button, summary, a[href]');
+                if (!f.length) return;
+                var first = f[0], last = f[f.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
+        });
+    })();
+    </script>
+
+    <!-- Interactive OLED Canvas JavaScript Emulator -->
+    <script>
+        const canvas = document.getElementById('oledCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.scale(4, 4); // render at 4x internal resolution for crisp, readable text
+        const hwLed = document.getElementById('hwLed');
+        const gpioBtn = document.getElementById('gpioBtn');
+
+        // State Machine Vars
+        let currentApp = 'MENU';
+        let menuIdx = 0;
+        const menuItems = [
+            "Instructions", "Stopwatch", "Timer", "Pomodoro", "Dice", "Magic 8-Ball",
+            "Coin Flipper", "Breathing", "Tally Counter", "Flashlight", "Snake",
+            "Flappy Bird", "Pong", "Space Defender", "Dino Runner", "About"
+        ];
+
+        let tallyCount = 0;
+        let swRunning = false;
+        let swStart = 0, swElapsed = 0;
+        let diceVal = 1, diceRolling = false;
+        let magicAns = "", magicShaking = false;
+        let coinRes = "HEADS", coinFlipping = false;
+        let torchMode = 0; // 0 solid, 1 strobe, 2 sos
+
+        // Button Gesture State
+        let pressTimer = null;
+        let pressStartTime = 0;
+        let lastTapTime = 0;
+
+        function setLed(state) {
+            if (state) hwLed.classList.add('active');
+            else hwLed.classList.remove('active');
+        }
+
+        // Draws text at full length; if it's wider than maxWidth, it bounces
+        // back and forth (with a brief pause at each end) instead of being cut off.
+        function drawFitText(text, x, y, maxWidth, clipTop = 9, clipHeight = 12) {
+            const w = ctx.measureText(text).width;
+            if (w <= maxWidth) {
+                ctx.fillText(text, x, y);
+                return;
+            }
+            const scrollRange = w - maxWidth;
+            const holdFrac = 0.18;
+            const period = 1400 + scrollRange * 35;
+            const cyclePos = (Date.now() / period) % 2; // 0 -> 2 triangle wave
+            let progress = cyclePos < 1 ? cyclePos : 2 - cyclePos;
+            progress = Math.max(0, Math.min(1, (progress - holdFrac) / (1 - 2 * holdFrac)));
+            const offset = progress * scrollRange;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y - clipTop, maxWidth, clipHeight);
+            ctx.clip();
+            ctx.fillText(text, x - offset, y);
+            ctx.restore();
+        }
+
+        // Main Draw Loop (30 FPS simulated)
+        function render() {
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, 72, 40);
+
+            ctx.fillStyle = "#00f0ff";
+            ctx.font = "7px monospace";
+
+            if (currentApp === 'MENU') {
+                let top = Math.floor(menuIdx / 3) * 3;
+                for (let i = 0; i < 3; i++) {
+                    let idx = top + i;
+                    if (idx >= menuItems.length) break;
+                    let y = 12 + i * 11;
+                    let title = menuItems[idx];
+
+                    if (idx === menuIdx) {
+                        ctx.fillRect(8, y - 8, 62, 10);
+                        ctx.fillStyle = "#000000";
+                        drawFitText(title, 10, y - 1, 58);
+                        ctx.fillStyle = "#00f0ff";
+                    } else {
+                        drawFitText(title, 10, y - 1, 58);
+                    }
+                }
+                // Scroll bar
+                ctx.strokeRect(0, 8, 5, 24);
+                let thumbY = 9 + Math.floor((menuIdx / (menuItems.length - 1)) * 18);
+                ctx.fillRect(1, thumbY, 3, 4);
+
+            } else if (currentApp === 'Stopwatch') {
+                ctx.fillText("STOPWATCH", 10, 8);
+                let t = swElapsed + (swRunning ? (Date.now() - swStart) : 0);
+                let m = Math.floor(t / 60000);
+                let s = Math.floor((t % 60000) / 1000);
+                let ms = Math.floor((t % 1000) / 100);
+                let str = (m<10?"0"+m:m) + ":" + (s<10?"0"+s:s) + "." + ms;
+                ctx.font = "10px monospace";
+                ctx.fillText(str, 8, 25);
+                ctx.font = "6px monospace";
+                ctx.fillText("Tap:Start/Stop", 2, 38);
+                setLed(swRunning && Math.floor(Date.now() / 500) % 2 === 0);
+
+            } else if (currentApp === 'Tally Counter') {
+                ctx.fillText("TALLY COUNTER", 2, 8);
+                ctx.font = "12px monospace";
+                let str = (tallyCount < 1000 ? "0" : "") + (tallyCount < 100 ? "0" : "") + (tallyCount < 15 ? "0" : "") + tallyCount;
+                ctx.fillText(str, 16, 26);
+                ctx.font = "6px monospace";
+                ctx.fillText("Tap:+1 | 2xTap:Rst", 0, 38);
+
+            } else if (currentApp === 'Dice') {
+                ctx.fillText("DICE ROLLER", 6, 8);
+                ctx.strokeRect(24, 12, 24, 22);
+                let val = diceRolling ? Math.floor(Math.random() * 6) + 1 : diceVal;
+                ctx.font = "14px monospace";
+                ctx.fillText(val.toString(), 31, 28);
+
+            } else if (currentApp === 'Magic 8-Ball') {
+                ctx.fillText("MAGIC 8-BALL", 4, 8);
+                if (magicShaking) {
+                    ctx.fillText("SHAKING...", 8, 24);
+                } else if (magicAns) {
+                    drawFitText(magicAns, 4, 24, 64);
+                } else {
+                    ctx.fillText("Tap to Ask", 8, 24);
+                }
+
+            } else if (currentApp === 'Coin Flipper') {
+                ctx.fillText("COIN FLIPPER", 2, 8);
+                if (coinFlipping) {
+                    ctx.fillText("FLIPPING..", 8, 24);
+                } else {
+                    ctx.font = "10px monospace";
+                    ctx.fillText(coinRes, 14, 25);
+                }
+
+            } else if (currentApp === 'Flashlight') {
+                if (torchMode === 0) {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, 72, 40);
+                    setLed(true);
+                } else if (torchMode === 1) {
+                    let on = Math.floor(Date.now() / 60) % 2 === 0;
+                    if (on) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 72, 40); }
+                    setLed(on);
+                } else {
+                    ctx.fillText("S O S MODE", 8, 20);
+                    setLed(Math.floor(Date.now() / 200) % 2 === 0);
+                }
+
+            } else if (currentApp === 'Breathing') {
+                ctx.fillText("BOX BREATHING", 2, 8);
+                let phase = Math.floor(Date.now() / 2000) % 4;
+                let phases = ["INHALE", "HOLD", "EXHALE", "HOLD"];
+                ctx.fillText(phases[phase], 18, 20);
+                let r = (phase === 0 || phase === 1) ? 8 : 4;
+                ctx.beginPath();
+                ctx.arc(36, 30, r, 0, 2 * Math.PI);
+                ctx.strokeStyle = "#00f0ff";
+                ctx.stroke();
+
+            } else {
+                ctx.fillText(currentApp.toUpperCase(), 2, 12);
+                ctx.fillText("App Running", 2, 24);
+                ctx.font = "6px monospace";
+                ctx.fillText("Hold 0.7s to Exit", 2, 38);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        // Virtual Button Input Event Logic
+        gpioBtn.addEventListener('mousedown', startPress);
+        gpioBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); });
+
+        window.addEventListener('mouseup', endPress);
+        window.addEventListener('touchend', endPress);
+
+        function startPress() {
+            pressStartTime = Date.now();
+            gpioBtn.classList.add('pressed');
+        }
+
+        function endPress() {
+            if (!pressStartTime) return;
+            gpioBtn.classList.remove('pressed');
+            let duration = Date.now() - pressStartTime;
+            pressStartTime = 0;
+
+            if (duration >= 700) {
+                // Hold gesture
+                if (currentApp === 'MENU') {
+                    currentApp = menuItems[menuIdx];
+                } else {
+                    currentApp = 'MENU';
+                    setLed(false);
+                }
+            } else {
+                // Short press or double tap
+                let now = Date.now();
+                let isDouble = (now - lastTapTime) < 350;
+                lastTapTime = now;
+
+                if (currentApp === 'MENU') {
+                    menuIdx = (menuIdx + 1) % menuItems.length;
+                } else if (currentApp === 'Stopwatch') {
+                    if (isDouble) { swRunning = false; swElapsed = 0; }
+                    else { swRunning = !swRunning; if (swRunning) swStart = Date.now(); }
+                } else if (currentApp === 'Tally Counter') {
+                    if (isDouble) tallyCount = 0;
+                    else tallyCount++;
+                } else if (currentApp === 'Dice') {
+                    diceRolling = true;
+                    setTimeout(() => { diceVal = Math.floor(Math.random() * 6) + 1; diceRolling = false; }, 500);
+                } else if (currentApp === 'Magic 8-Ball') {
+                    magicShaking = true;
+                    const answers = ["YES!", "ABSOLUTELY", "NO WAY", "MAYBE...", "ASK AGAIN"];
+                    setTimeout(() => { magicAns = answers[Math.floor(Math.random() * answers.length)]; magicShaking = false; }, 600);
+                } else if (currentApp === 'Coin Flipper') {
+                    coinFlipping = true;
+                    setTimeout(() => { coinRes = Math.random() > 0.5 ? "HEADS" : "TAILS"; coinFlipping = false; }, 600);
+                } else if (currentApp === 'Flashlight') {
+                    torchMode = (torchMode + 1) % 3;
+                }
+            }
+        }
+
+        // Start animation loop
+        render();
+
+        // ---- Scroll-reveal for sections & cards ----
+        const revealTargets = document.querySelectorAll('.container > section, .app-card');
+        revealTargets.forEach(el => el.classList.add('reveal'));
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+
+        revealTargets.forEach(el => revealObserver.observe(el));
+
+        // ---- Keyboard support: Space / Enter act as the physical BOOT button ----
+        let keyIsDown = false;
+        window.addEventListener('keydown', (e) => {
+            if ((e.code === 'Space' || e.code === 'Enter') && !keyIsDown) {
+                const active = document.activeElement;
+                // Let real buttons/links/summary (e.g. the flash dialog) handle Space/Enter themselves
+                if (active && active !== gpioBtn && active.closest && active.closest('a, button, summary, #flashModal')) return;
+                // Avoid double-triggering if the button itself already has native focus activation
+                if (active && active !== gpioBtn) e.preventDefault();
+                keyIsDown = true;
+                startPress();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'Enter') {
+                keyIsDown = false;
+                endPress();
+            }
+        });
+
+        // ---- Subtle 3D tilt on the PCB mockup (desktop pointer only) ----
+        const pcb = document.querySelector('.esp-pcb');
+        const boardContainer = document.querySelector('.board-container');
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && pcb && boardContainer) {
+            boardContainer.addEventListener('mousemove', (e) => {
+                const rect = boardContainer.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                pcb.style.transform = `perspective(600px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
+            });
+            boardContainer.addEventListener('mouseleave', () => {
+                pcb.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
+            });
+        }
+    </script>
+</body>
+</html>

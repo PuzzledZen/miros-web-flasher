@@ -1,0 +1,13 @@
+{
+  "name": "MIROS v1.0",
+  "version": "1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C3",
+      "parts": [
+        { "path": "miros-merged-firmware.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
