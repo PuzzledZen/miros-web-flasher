@@ -2,7 +2,7 @@
 
 A tiny operating system for **ESP32-C3 boards with the 0.42" (72×40) OLED**, driven by a single button. This repo is the showcase page with an interactive simulator, plus a **one-click in-browser flasher**. No tools or drivers to install, just Chrome.
 
-**Live page:** https://puzzledzen.github.io/miros-web-flasher/
+**Live page:** https://miros-web-flasher.vercel.app/
 
 ## Flash it yourself
 
